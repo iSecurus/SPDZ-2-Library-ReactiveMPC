@@ -1,0 +1,149 @@
+# (C) 2017 Malte Kruse. See License.txt.
+
+program.bit_length=32
+CODE_PATTERN_LENGTH=4
+ROUNDS_TO_PLAY=12
+
+codeCorrect = MemValue(cint(1))
+correctGuessed = MemValue(cint(0))
+array = Array(CODE_PATTERN_LENGTH,sint)
+guessed = Array(CODE_PATTERN_LENGTH,sint)
+
+
+def get_code_from_codemaker():  
+    print_ln('Its codemakers turn. Codepattern from file or console input?')
+    print_ln('(console=1/file=0)')
+    
+    f_or_c = sint.get_input_from(0)
+    
+    if_then((f_or_c == 0).reveal())
+    @for_range(CODE_PATTERN_LENGTH)  
+    def _(i):
+       array[i] = sint.get_raw_input_from(0)
+       print_ln('read %s', array[i].reveal())
+       codeCorrect.write(((array[i] <= 6) * (array[i] >= 1) * codeCorrect.read()).reveal())
+    end_if()  
+ 
+
+    if_then((f_or_c != 0).reveal() | (1 - codeCorrect.read()))
+    
+    if_then((1 - codeCorrect.read()))
+    print_ln('Error while reading codepattern from File. Please type in some code.')
+    end_if()
+    
+    codeCorrect.write(cint(1))
+    
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        print_ln('Please enter a number between 1 and 6 (inclusive). Code completed to %s/4', i+1)
+        array[i] = sint.get_input_from(0)
+        codeCorrect.write(((array[i] <= 6) * (array[i] >= 1) * codeCorrect.read()).reveal())
+    end_if()
+    
+    
+    if_then(codeCorrect.read())
+    print_ln('The given codepattern was fully correct.')
+    else_then()
+    print_ln('Could not accept codepattern. Please restart program.')
+    end_if()
+
+
+def get_code_from_codebreaker(round):
+    print_ln_to(0, 'Now its codebreakers turn! Good luck to you!')
+    print_ln_to(1, 'Now its codebreakers turn! Good luck to you!')
+    print_ln_to(1, '%s. Round:', round)
+    
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        print_ln_to(1, 'Please enter a number between 1 and 6 (inclusive). Guess completed to %s/4', i+1)
+        guessed[i] = sint.get_input_from(1)
+    
+
+def compute_result(round):
+    correctGuessedNum = MemValue(sint(0))
+    containedGuesses = MemValue(sint(0))
+    res = MemValue(sint(0))
+
+    
+    controllArray = Array(4,sint)
+    controllArrayCopy = Array(4,sint)
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        correctGuessedNum.write(correctGuessedNum.read() + (guessed[i] == array[i]))
+        controllArray[i] = guessed[i] == array[i]
+        controllArrayCopy[i] = controllArray[i]
+
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+      contained = Array(4, sint)
+      
+      if_then((controllArrayCopy[i] != 1).reveal())
+      true = MemValue(cint(1))
+      @for_range(CODE_PATTERN_LENGTH)
+      def _(k):
+          help = contained[k]
+          contained[k] = (guessed[k] == array[i]) * (controllArray[k] == 0)
+          cond = (help == 0) * contained[k]
+          if_then(cond.reveal() & true.read())
+          controllArray[k] = cond
+          true.write(0)
+          end_if()
+      @for_range(CODE_PATTERN_LENGTH)
+      def _(j):
+        res.write(res.read() + contained[j])
+         
+      containedGuesses.write(containedGuesses.read() + (res > 0).reveal())
+      res.write(0)
+      end_if()
+   
+    if_then(((correctGuessedNum.read() == 4) * (containedGuesses.read() == 0)).reveal())
+    correctGuessed.write(1)
+    end_if()
+    
+    if_then((correctGuessedNum.read() == 4).reveal())
+    print_ln_to(0, 'Congratulations! Codebreakers guess was right. It tooks %s Round(s)', round)
+    print_ln_to(1, 'Congratulations! Your guess was right. It tooks %s Round(s)', round)
+    else_then()
+    print_ln_to(0, 'Codebreakers guess was wrong!')
+    print_ln_to(1, 'Your guess was wrong!')
+    if_then(round != 12)
+    print_ln_to(1, 'Fully correct numbers: %s', correctGuessedNum.read().reveal())
+    print_ln_to(1, 'In codepattern contained numbers: %s', containedGuesses.read().reveal())
+    else_then()
+    print_ln_to(0, 'You have finally won after %s Rounds.', round)
+    print_ln_to(1, 'The codemaker finally wins after %s Rounds.', round)
+    end_if()
+    end_if()
+
+def start_game():
+    start_monolog(0)
+    start_monolog(1)
+
+    print_ln('You are the codemaker! Are you ready? (yes=1/no=0):')
+    start1 = sint.get_input_from(0)
+    print_ln_to(1, 'You are the codebraker! Are you ready? (yes=1/no=0):')
+    start2 = sint.get_input_from(1)
+
+    if_then((start1 != 0).reveal() & (start2 != 0).reveal())
+    get_code_from_codemaker()
+    
+    @for_range(ROUNDS_TO_PLAY)
+    def _(i):
+        if_then(codeCorrect.read() & (correctGuessed.read() == 0))
+        get_code_from_codebreaker(i+1)
+        compute_result(i+1)
+        end_if()
+    end_if()
+
+def start_monolog(player):
+    print_ln_to(player, 'Welcome to Mastermind - a logic game invented in 1970 by Mordecai Meirowitz')
+    print_ln_to(player, 'The rules:')
+    print_ln_to(player, 'There are two players - the codemaker and the codebreaker.')
+    print_ln_to(player, 'First the codemaker has to choose a secret codepattern with four out of six numbers (1-6).')
+    print_ln_to(player, 'After the pattern was choosen, the codebreaker has to guess the code. Therefore he has 12 Rounds')
+    print_ln_to(player, 'Was a guess made, the codemaker reveals the number of fully correct guessed numbers (number + position')
+    print_ln_to(player, 'correct) and the number of existing correct numbers at the wrong position')
+    print_ln_to(player, 'Once the codebreaker guessed the correct code within the 12 rounds, he won, otherwise the codemaker has won.')
+    print_ln_to(player, '')
+
+start_game()

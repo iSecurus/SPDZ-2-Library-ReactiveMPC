@@ -1,4 +1,4 @@
-# (C) 2016 University of Bristol. See License.txt
+# (C) 2016 University of Bristol. See License_SPDZ2.txt
 
 """ This module is for classes of actual assembly instructions.
 
@@ -906,23 +906,29 @@ class print_reg_plain(base.IOInstruction):
     r""" Print only the value of register \verb|ci| to stdout. """
     __slots__ = []
     code = base.opcodes['PRINTREGPLAIN']
-    arg_format = ['c']
+    arg_format = ['c', 'p']
+
+    def __init__(self, reg, player):
+        super(print_reg_plain_class, self).__init__(reg, player)
+
+    def execute(self):
+        pass
 
 class print_char(base.IOInstruction):
     r""" Print a single character to stdout. """
     code = base.opcodes['PRINTCHR']
-    arg_format = ['int']
+    arg_format = ['p','int']
 
-    def __init__(self, ch):
-        super(print_char, self).__init__(ord(ch))
+    def __init__(self, player, ch):
+        super(print_char, self).__init__(player, ord(ch))
 
 class print_char4(base.IOInstruction):
     r""" Print a 4 character string. """
     code = base.opcodes['PRINTSTR']
-    arg_format = ['int']
+    arg_format = ['p', 'int']
 
-    def __init__(self, val):
-        super(print_char4, self).__init__(self.str_to_int(val))
+    def __init__(self, player,  val):
+        super(print_char4, self).__init__(player, self.str_to_int(val))
 
 @base.vectorize
 class print_char_regint(base.IOInstruction):

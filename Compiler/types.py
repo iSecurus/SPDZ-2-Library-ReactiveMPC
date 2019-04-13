@@ -1,4 +1,4 @@
-# (C) 2016 University of Bristol. See License.txt
+# (C) 2016 University of Bristol. See License_SPDZ2.txt
 
 from Compiler.program import Tape
 from Compiler.exceptions import *
@@ -246,8 +246,8 @@ class _clear(_register):
 
     @set_instruction_type
     @vectorize
-    def print_reg_plain(self):
-        print_reg_plain(self)
+    def print_reg_plain(self, player=0):
+        print_reg_plain(self, player)
 
     @set_instruction_type
     @vectorize

@@ -1,0 +1,87 @@
+# (C) 2017 Malte Kruse. See License.txt.
+
+#Some configurations and constants
+program.bit_length=32
+CODE_PATTERN_LENGTH=4
+ROUNDS_TO_PLAY=12
+
+#Results 
+correct = MemValue(sint(0))
+contained = MemValue(sint(0))
+
+#Flag indicating whether the code was cracked or not 
+end = MemValue(cint(0))
+
+#Stores the secrete of the codemaker and the guess of the codebreaker
+secret = Array(CODE_PATTERN_LENGTH,sint)
+tip = Array(CODE_PATTERN_LENGTH,sint)
+
+def get_code_from_codemaker():   
+    #Get code frome the codemaker
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        secret[i] = sint.get_input_from(0)
+
+def get_code_from_codebreaker():
+    #Get the guess of the codemaker
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        tip[i] = sint.get_input_from(1)
+    
+def compute_result(round):
+    correct.write(0)
+    contained.write(0)
+    secret_copy = Array(CODE_PATTERN_LENGTH,sint)
+    
+    #Copy secret, so we can work on the copy
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        secret_copy[i] = secret[i]
+    
+    #Check for colors at correct positions - for every match
+    #set the position to 0 in both arrays (secret_copy and tip) 
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        equal = (tip[i] == secret_copy[i])
+        #WORKAROUND: Multiply by 1 because without the
+        #addition only works with revealing one of the values
+        correct.write(correct.read() + (equal*1))
+        secret_copy[i] = (1 - equal) * secret_copy[i]
+        tip[i] = (1 - equal) * tip[i]
+
+    #Check for contained colors - loop through every element of tip
+    #and check, whether there is a match in secret_copy or not.
+    #If a match was found, set cur position of both arrays to 0.
+    @for_range(CODE_PATTERN_LENGTH)
+    def _(i):
+        @for_range(CODE_PATTERN_LENGTH)
+        def _(j):
+            tip_elem = tip[i]
+            secret_elem = secret_copy[j]
+            cond = (tip_elem != 0) * (secret_elem != 0) * (tip_elem == secret_elem)
+            #WORKAROUND: Multiply by 1 because without the
+            #addition only works with revealing one of the values
+            contained.write(contained.read() + (cond*1))
+            secret_copy[j] = (1 - cond) * secret_elem
+            tip[i] = (1 - cond) * tip_elem
+    
+    if_then((correct.read().reveal() == 4) * (contained.read().reveal() == 0))
+    end.write(1)
+    end_if()
+       
+    print_output_to(1, 'correct', '%s', correct.read().reveal())
+    print_output_to(1, 'contained', '%s', contained.read().reveal())
+	
+def start_game():
+    #Starts the game
+    get_code_from_codemaker()
+    
+    @for_range(ROUNDS_TO_PLAY)
+    def _(i):
+        if_then(end.read() == 0)
+        get_code_from_codebreaker()
+        compute_result(i)
+        end_if()
+ 
+start_game()
+print_output_to(0, 'result', '%s', end.read())

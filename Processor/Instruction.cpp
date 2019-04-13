@@ -1,4 +1,4 @@
-// (C) 2016 University of Bristol. See License.txt
+// (C) 2016 University of Bristol. See License_SPDZ2.txt
 
 
 #include "Processor/Instruction.h"
@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <sstream>
 #include <map>
-
+#include <iomanip>
 
 // Read a byte
 int get_val(istream& s)
@@ -68,7 +68,7 @@ void get_vector(int m, vector<int>& start, istream& s)
 
 void Instruction::parse(istream& s)
 {
-  n=0; start.resize(0);
+  n=0; player=0; start.resize(0);
   r[0]=0; r[1]=0; r[2]=0;
 
   int pos=s.tellg();
@@ -167,7 +167,6 @@ void Instruction::parse(istream& s)
       // instructions with 1 register operand
       case BIT:
       case PRINTMEM:
-      case PRINTREGPLAIN:
       case LDTN:
       case LDARG:
       case STARG:
@@ -267,9 +266,17 @@ void Instruction::parse(istream& s)
         r[0]=get_int(s);
         n = get_int(s);
         break;
-      // instructions with 1 integer operand
+      // instructions with 2 integer operands
       case PRINTSTR:
       case PRINTCHR:
+    	player = get_int(s);
+    	n = get_int(s);
+    	break;
+      case PRINTREGPLAIN:
+        r[0]=get_int(s);
+        player = get_int(s);
+        break;
+      // instructions with 1 integer operand
       case JMP:
       case START:
       case STOP:
@@ -1056,6 +1063,7 @@ void Instruction::execute(Processor& Proc) const
 	      #ifdef DEBUG
 	         printf("Enter your input : \n");
 	      #endif
+	          cout << "#in_p" << setw(3) << setfill('0') << n << endl;
               word x;
               cin >> x;
               t.assign(x);
@@ -1416,7 +1424,7 @@ void Instruction::execute(Processor& Proc) const
            }
         break;
       case PRINTREGPLAIN:
-        if (Proc.P.my_num() == 0)
+        if (Proc.P.my_num() == player)
            {
              cout << Proc.read_Cp(r[0]) << flush;
            }
@@ -1428,13 +1436,13 @@ void Instruction::execute(Processor& Proc) const
            }
         break;
       case PRINTSTR:
-        if (Proc.P.my_num() == 0)
+        if (Proc.P.my_num() == player)
            {
              cout << string((char*)&n,sizeof(n)) << flush;
            }
         break;
       case PRINTCHR:
-        if (Proc.P.my_num() == 0)
+        if (Proc.P.my_num() == player)
            {
              cout << string((char*)&n,1) << flush;
            }

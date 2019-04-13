@@ -1,4 +1,4 @@
-// (C) 2016 University of Bristol. See License.txt
+// (C) 2016 University of Bristol. See License_SPDZ2.txt
 
 #ifndef _Instruction
 #define _Instruction
@@ -277,6 +277,7 @@ class Instruction
   int opcode;         // The code
   int size;           // Vector size
   int r[3];           // Three possible registers
+  int player;         // The player
   unsigned int n;     // Possible immediate value
   vector<int>  start; // Values for a start/stop open
 

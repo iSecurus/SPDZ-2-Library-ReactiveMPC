@@ -1,0 +1,43 @@
+# (C) 2017 Malte Kruse. See License.txt.
+
+program.bit_length = 32
+def euclid(a, b):
+  help_a = MemValue(sint(a))
+  help_b = MemValue(sint(b))
+    
+  cond = a > b
+  cond = 1 + sint.get_random_int(10) + a * cond + (1 - cond) * b
+  
+  @for_range(cond.reveal())
+  def _(i):
+    cond = help_b.read() != 0
+    cond2 = help_a.read() > help_b.read()
+    
+    resA = help_a.read() - cond2 * help_b.read()
+    resB = help_b.read() - (1 - cond2) * help_a.read()
+    
+    help_a.write(resA * cond + help_a.read() * (1 - cond))
+    help_b.write(resB) 
+
+
+  cond = 1 - (a > 0)
+  res = b * cond + (1 - cond) * help_a.read()
+  return res
+
+
+print_ln('Please entere a number greater 0!')
+print_ln('If 0 was choosen, a random input will be used for calculation!')
+ 
+print_ln('Need some input from Player 0')
+p1 = sint.get_input_from(0)
+print_ln('Need some input from Player 1')
+p2 = sint.get_input_from(1)
+
+cond1 = p1 == 0
+p1 = p1 * (1 - cond1) + cond1 * sint.get_random_int(10)
+cond2 = p2 == 0
+p2 = p2 * (1 - cond2) + cond2 * sint.get_random_int(10)
+
+gcd = euclid(p1, p2)
+
+print_ln('The greatest common divisor of the given numbers is %s', gcd.reveal())

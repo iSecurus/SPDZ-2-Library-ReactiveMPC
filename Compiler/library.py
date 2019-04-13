@@ -1,4 +1,4 @@
-# (C) 2016 University of Bristol. See License.txt
+# (C) 2016 University of Bristol. See License_SPDZ2.txt
 
 from Compiler.types import cint,sint,cfix,sfix,sfloat,MPCThread,Array,MemValue,cgf2n,sgf2n,_number,_mem,_register,regint,Matrix,_types
 from Compiler.instructions import *
@@ -48,24 +48,24 @@ def set_instruction_type(function):
     return instruction_typed_function
 
 
-def print_str(s, *args):
+def print_str(p, s, *args):
     """ Print a string, with optional args for adding variables/registers with %s """
-    def print_plain_str(ss):
+    def print_plain_str(player, ss):
         """ Print a plain string (no custom formatting options) """
         i = 1
         while 4*i < len(ss):
-            print_char4(ss[4*(i-1):4*i])
+            print_char4(player, ss[4*(i-1):4*i])
             i += 1
         i = 4*(i-1)
         while i < len(ss):
-            print_char(ss[i])
+            print_char(player, ss[i])
             i += 1
 
     if len(args) != s.count('%s'):
         raise CompilerError('Incorrect number of arguments for string format:', s)
     substrings = s.split('%s')
     for i,ss in enumerate(substrings):
-        print_plain_str(ss)
+        print_plain_str(p, ss)
         if i < len(args):
             if isinstance(args[i], MemValue):
                 val = args[i].read()
@@ -73,9 +73,9 @@ def print_str(s, *args):
                 val = args[i]
             if isinstance(val, program.Tape.Register):
                 if val.reg_type == 'ci':
-                    cint(val).print_reg_plain()
+                    cint(val).print_reg_plain(p)
                 elif val.is_clear:
-                    val.print_reg_plain()
+                    val.print_reg_plain(p)
                 else:
                     raise CompilerError('Cannot print secret value:', args[i])
             elif isinstance(val, cfix):
@@ -87,8 +87,8 @@ def print_str(s, *args):
                 right = positive_left % 2**val.f
                 @if_(sign == -1)
                 def block():
-                    print_str('-')
-                cint((positive_left - right + 1) / 2**val.f).print_reg_plain()
+                    print_str(p, '-')
+                cint((positive_left - right + 1) / 2**val.f).print_reg_plain(p)
                 x = 0
                 max_dec_base = 6 # max 32-bit precision
                 last_nonzero = 0
@@ -100,29 +100,40 @@ def print_str(s, *args):
                     b = (t > 0)
                     last_nonzero = (1 - b) * last_nonzero + b * i
                     v = (v - t) / 10
-                print_plain_str('.')
+                print_plain_str(p, '.')
                 @for_range(max_dec_base - 1 - last_nonzero)
                 def f(i):
-                    print_str('0')
-                x.print_reg_plain()
+                    print_str(p, '0')
+                x.print_reg_plain(p)
             elif isinstance(val, sfix):
                 raise CompilerError('Cannot print secret value:', args[i])
             elif isinstance(val, list):
-                print_str('[' + ', '.join('%s' for i in range(len(val))) + ']', *val)
+                print_str(p, '[' + ', '.join('%s' for i in range(len(val))) + ']', *val)
             else:
                 try:
                     val.output()
                 except AttributeError:
-                    print_plain_str(str(val))
+                    print_plain_str(p, str(val))
 
 def print_ln(s='', *args):
     """ Print line, with optional args for adding variables/registers with %s """
-    print_str(s, *args)
-    print_char('\n')
+    print_str(0, s, *args)
+    print_char(0, '\n')
 
+def print_ln_to(player=0, s='', *args):
+    """ Print line, with optional args for adding variables/registers with %s
+        to player """
+    print_str(player, s, *args)
+    print_char(player, '\n')
+
+def print_output_to(player=0, token='', s='', *args):
+    print_ln_to(player, ("#out_p%03i_" + token) % (player))
+    print_ln_to(player, s, *args)
+    print_ln_to(player, (token + "_p%03i_out#") % (player))
+    
 def runtime_error(msg='', *args):
     """ Print an error message and abort the runtime. """
-    print_str('User exception: ')
+    print_str(0, 'User exception: ')
     print_ln(msg, *args)
     crash()
 
