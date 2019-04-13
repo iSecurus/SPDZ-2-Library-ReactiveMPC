@@ -1,0 +1,3 @@
+[submodule "SPDZ-2"]
+	path = SPDZ-2
+	url = https://github.com/bristolcrypto/SPDZ-2.git
